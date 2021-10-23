@@ -34,6 +34,7 @@ class _PrcState extends State<Prc> {
   String verificationId = "";
   User? user;
   String _ph = "";
+  bool _new = false;
   @override
   void initState() {
     sendotp();
@@ -94,7 +95,11 @@ class _PrcState extends State<Prc> {
         Get.to(
           EmailVerify(data: data, app: app),
         );
-      } catch (e) {
+      } on FirebaseAuthException catch (e) {
+        if (e.code == "firebase_auth/email-already-in-use")
+          setState(() {
+            _new = false;
+          });
         Get.snackbar(
           "Phone verification",
           "Error occured $e",
@@ -122,10 +127,13 @@ class _PrcState extends State<Prc> {
               size: 25,
             ),
             onPressed: () async {
+              if (_new) {
+                try {
+                  auth.currentUser!.delete();
+                } catch (e) {}
+              }
+
               Navigator.pop(context);
-              try {
-                await auth.signOut();
-              } catch (e) {}
             },
           ),
         ),

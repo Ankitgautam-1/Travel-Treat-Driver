@@ -319,9 +319,8 @@ class _SignUpState extends State<SignUp> {
                         width: 320,
                         child: TextFormField(
                           controller: _email,
-                          validator: (val) => val!.contains('@gmail.com')
-                              ? null
-                              : "Enter valide email",
+                          validator: (val) =>
+                              val!.isEmail ? null : "Enter valide email",
                           keyboardType: TextInputType.text,
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
@@ -378,7 +377,7 @@ class _SignUpState extends State<SignUp> {
                         child: TextFormField(
                           obscureText: isobscure,
                           controller: _pass,
-                          validator: (val) => val!.length > 6
+                          validator: (val) => val!.length > 5
                               ? null
                               : "password should be at least 6 charcter",
                           keyboardType: TextInputType.text,

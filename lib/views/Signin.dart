@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:driver/views/Dashboard.dart';
+import 'package:driver/views/Location_permission.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -10,12 +12,15 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:driver/Data/accountProvider.dart';
 import 'package:driver/Data/image.dart';
 import 'package:driver/models/userAccount.dart';
-import 'package:driver/views/Maps.dart';
 import 'package:driver/views/Signup.dart';
+import 'package:open_apps_settings/open_apps_settings.dart';
+import 'package:open_apps_settings/settings_enum.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:permission_handler/permission_handler.dart' as permissions;
+import 'package:location/location.dart' as loc;
 
 // ignore: must_be_immutable
 class SignIn extends StatefulWidget {
@@ -32,6 +37,7 @@ class _SignInState extends State<SignIn> {
   TextEditingController _email = TextEditingController();
   TextEditingController _pass = TextEditingController();
   final _formkey = GlobalKey<FormState>();
+  loc.Location location = loc.Location();
   FirebaseAuth _auth = FirebaseAuth.instance;
   Map<dynamic, dynamic>? result;
   bool _obscure = true;
@@ -92,7 +98,7 @@ class _SignInState extends State<SignIn> {
                 Directory.systemTemp.path + '/' + user.uid + "_profile";
             await newimage.download(url, savePath,
                 options: Options(responseType: ResponseType.bytes));
-            db.child('Users').child(user.uid).update({"Image": savePath});
+            db.child('Drivers').child(user.uid).update({"Image": savePath});
             Provider.of<ImageData>(context, listen: false)
                 .updateimage(File(savePath));
             image = savePath;
@@ -103,7 +109,14 @@ class _SignInState extends State<SignIn> {
           prefs.setString("Email", email!);
           prefs.setString("Ph", ph!);
           prefs.setString("Image", image!);
-          Get.offAll(Maps(app: app));
+          if (await permissions.Permission.locationWhenInUse.isGranted ||
+              await permissions.Permission.locationWhenInUse.isLimited ||
+              await permissions.Permission.location.isGranted ||
+              await permissions.Permission.location.isLimited) {
+            _checkGps();
+          } else {
+            Get.offAll(LocationPermissoin(app: app));
+          }
         } on FirebaseAuthException catch (e) {
           if (e.code == 'user-not-found') {
             Get.snackbar("Sign In", "Error Occured usernot found",
@@ -140,6 +153,30 @@ class _SignInState extends State<SignIn> {
       });
     } else {
       print("Not valid");
+    }
+  }
+
+  void _checkGps() async {
+    bool locationServices = await location.serviceEnabled();
+    print("val:$locationServices");
+    if (!locationServices) {
+      Future.delayed(
+        Duration(seconds: 3),
+        () async {
+          await OpenAppsSettings.openAppsSettings(
+            settingsCode: SettingsCode.LOCATION,
+            onCompletion: () async {
+              if (await location.serviceEnabled()) {
+                Get.offAll(Dashboard(app: app));
+              } else {
+                Get.offAll(LocationPermissoin(app: app));
+              }
+            },
+          );
+        },
+      );
+    } else {
+      Get.offAll(Dashboard(app: app));
     }
   }
 
