@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:driver/Data/files.dart';
 import 'package:driver/views/Welcome.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -14,9 +15,11 @@ import 'package:driver/models/userAccount.dart';
 import 'dart:io' as io;
 import 'package:driver/views/Dashboard.dart';
 import 'package:driver/views/Maps.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:supabase/supabase.dart' as sm;
 
 // ignore: must_be_immutable
 class EmailVerify extends StatefulWidget {
@@ -40,10 +43,11 @@ class _EmailVerifyState extends State<EmailVerify> {
   Timer? timer;
   bool isdisable = false;
   File? file1, file2, file3, file4, file5;
+  bool isuploading = false;
+  final _firestore = FirebaseFirestore.instance;
   @override
   void initState() {
     user = auth.currentUser;
-
     print(data);
     print('Checking for verification');
     timer = Timer.periodic(Duration(seconds: 4), (timer) {
@@ -100,22 +104,40 @@ class _EmailVerifyState extends State<EmailVerify> {
                 ),
                 Text(
                   'Email Verification',
-                  style: TextStyle(
-                    fontSize: 35,
-                  ),
+                  style: GoogleFonts.openSans(
+                      fontSize: 35,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black54),
                 ),
                 SizedBox(
                   height: 20,
                 ),
                 Text(
-                  'Please check your Email & Verify',
-                  style: TextStyle(
-                    fontSize: 18,
-                  ),
+                  isuploading
+                      ? "Your Email is Verified"
+                      : 'Please check your Email & Verify',
+                  style:
+                      GoogleFonts.openSans(fontSize: 17, color: Colors.black54),
                 ),
                 SizedBox(
                   height: 30,
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12.0, right: 12),
+                  child: Text(
+                    isuploading
+                        ? "The Image is being uploaded to the server, please wait for a while don't close the app"
+                        : "",
+                    style: GoogleFonts.openSans(
+                        fontSize: 15, color: Colors.black54),
+                  ),
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                isuploading
+                    ? Center(child: CircularProgressIndicator())
+                    : Container(),
               ],
             ),
           ),
@@ -130,6 +152,9 @@ class _EmailVerifyState extends State<EmailVerify> {
     print("Checking for user $user");
     await user!.reload();
     if (user!.emailVerified) {
+      setState(() {
+        isuploading = true;
+      });
       timer!.cancel();
       final String uid = user!.uid;
 
@@ -137,7 +162,18 @@ class _EmailVerifyState extends State<EmailVerify> {
       final String email = data[1];
       final String ph = data[2];
       final dynamic profile = data[4];
-
+      var collectionReference = _firestore.collection('Drivers_req');
+      collectionReference.doc(uid).set({
+        "Email": email.toString(),
+        "Image":
+            "https://ugxqtrototfqtawjhnol.supabase.in/storage/v1/object/public/travel-treat-storage/Drivers_req/${user!.uid}/${user!.uid}",
+        "Phone": ph,
+        "UserID": uid,
+        "Username": username,
+        "cabUrl":
+            "https://ugxqtrototfqtawjhnol.supabase.in/storage/v1/object/public/travel-treat-storage/Drivers_req/${user!.uid}/${user!.uid}_cabimage",
+        "rating": "4.3"
+      });
       // UserAccount userAccData = UserAccount(
       //     Email: email, Image: profile, Ph: ph, Uid: uid, Username: username);
 
@@ -150,7 +186,6 @@ class _EmailVerifyState extends State<EmailVerify> {
         print("Uploading image");
         File prof = Provider.of<ImageData>(context, listen: false).image!;
         ref.putFile(prof);
-
         file1 = Provider.of<Files>(context, listen: false).file1;
         file2 = Provider.of<Files>(context, listen: false).file2;
         file3 = Provider.of<Files>(context, listen: false).file3;
@@ -168,7 +203,7 @@ class _EmailVerifyState extends State<EmailVerify> {
             .child('Driver_Details')
             .child('/${user!.uid}/${user!.uid}_file2');
         ref.putFile(file2!);
-        print("secand file uploaded ");
+        print("secand file uploaded  ${file2!.path}");
 
         ref = firebase_storage.FirebaseStorage.instance
             .ref()
@@ -187,8 +222,37 @@ class _EmailVerifyState extends State<EmailVerify> {
             .child('Driver_Details')
             .child('/${user!.uid}/${user!.uid}_file5');
         ref.putFile(file5!);
+        File? cab = Provider.of<ImageData>(context, listen: false).cab_image;
+        final client = sm.SupabaseClient(
+            'https://ugxqtrototfqtawjhnol.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjM5NjQ0MzM2LCJleHAiOjE5NTUyMjAzMzZ9.7ZRfV8ekUJBSLVQWA6ylO5gdbE5BNnnD8lyZDflOgU0');
+        print("client:$client");
+        await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/${user!.uid}', prof);
+        await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/${user!.uid}_cabimage', cab!);
+        final storageResponse = await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/Drivers_license', file1!);
+        await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/Drivers_NOC', file2!);
+        await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/Drivers_RC', file3!);
+        await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/Drivers_Vehicle_ins', file4!);
+        await client.storage
+            .from('travel-treat-storage')
+            .upload('Drivers_req/${user!.uid}/Drivers_Vehicle_permit', file5!);
+
+        print("file uploaded in supabase:${storageResponse.data}");
         print("Fifth file uploaded ");
         print('Uploaded Files');
+
         final DatabaseReference db = FirebaseDatabase(app: app).reference();
         await db.child('Driver_response').child(uid).set(
           {

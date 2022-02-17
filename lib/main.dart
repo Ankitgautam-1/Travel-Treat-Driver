@@ -4,11 +4,17 @@ import 'dart:io';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:driver/Data/files.dart';
+import 'package:driver/Data/passengerProvider.dart';
+import 'package:driver/models/Direction_provider.dart';
+import 'package:driver/services/notification_service.dart';
 import 'package:driver/views/Location_permission.dart';
+import 'package:driver/views/ride_notification.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:driver/Data/image.dart';
 import 'package:driver/Data/userData.dart';
@@ -23,11 +29,30 @@ import 'package:open_apps_settings/settings_enum.dart';
 import 'Data/accountProvider.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:location/location.dart' as loc;
+import 'package:supabase/supabase.dart' as sm;
+import 'package:get_storage/get_storage.dart';
 
 var uid, image, username, ph, email;
+
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  await GetStorage.init();
+  AndroidNotificationDetails androidPlatformChannelSpecifics =
+      AndroidNotificationDetails("chnanelId", "channellname",
+          channelDescription:
+              "The Travel Treat app requires notification service to assure user and alert on required time.",
+          importance: Importance.high,
+          priority: Priority.high);
+  NotificationDetails platformChannelSpecifics =
+      NotificationDetails(android: androidPlatformChannelSpecifics);
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  NotificationServices().init();
   final FirebaseApp app = await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  final _firestore = FirebaseFirestore.instance;
   SystemChrome.setPreferredOrientations(
     [
       DeviceOrientation.portraitUp,
@@ -35,6 +60,19 @@ Future<void> main() async {
     ],
   );
   VisualDensity.adaptivePlatformDensity;
+  FirebaseMessaging.instance.getToken().then((token) => print("token:$token"));
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    print("title :${message.data['title']}");
+
+    print(message.notification);
+    print(message.data);
+    AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails("chnanelId", "channellname",
+            channelDescription:
+                "The Travel Treat app requires notification service to assure user and alert on required time.",
+            importance: Importance.high,
+            priority: Priority.high);
+  });
   runApp(
     MultiProvider(
       providers: [
@@ -50,11 +88,17 @@ Future<void> main() async {
         ChangeNotifierProvider<Files>(
           create: (context) => Files(),
         ),
+        ChangeNotifierProvider<DirectionsProvider>(
+          create: (context) => DirectionsProvider(),
+        ),
+        ChangeNotifierProvider<PassengerProvider>(
+          create: (context) => PassengerProvider(),
+        ),
       ],
       child: GetMaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          fontFamily: 'Ubuntu',
+          fontFamily: 'OpenSans',
         ),
         home: SafeArea(
           child: MyApp(app: app),
@@ -66,7 +110,7 @@ Future<void> main() async {
 
 // ignore: must_be_immutable
 class MyApp extends StatefulWidget {
-  FirebaseApp app;
+  final FirebaseApp app;
   MyApp({required this.app});
   @override
   _MyAppState createState() => _MyAppState(app: app);
@@ -93,7 +137,7 @@ class _MyAppState extends State<MyApp> {
             settingsCode: SettingsCode.LOCATION,
             onCompletion: () async {
               if (await location.serviceEnabled()) {
-                Get.offAll(Dashboard(app: app));
+                Get.offAll(Maps(app: app));
               } else {
                 Get.offAll(LocationPermissoin(app: app));
               }
@@ -103,7 +147,7 @@ class _MyAppState extends State<MyApp> {
       );
     } else {
       Timer(Duration(seconds: 5), () {
-        Get.offAll(Dashboard(app: app));
+        Get.offAll(Maps(app: app));
       });
     }
   }
@@ -116,9 +160,20 @@ class _MyAppState extends State<MyApp> {
       email = prefs.getString('Email');
       image = prefs.getString('Image');
       ph = prefs.getString('Ph');
+      String carClass = prefs.getString('carClass')!;
+      String carModel = prefs.getString('carModel')!;
+      String carNumber = prefs.getString('carNumber')!;
+      String carUrl = prefs.getString('carUrl')!;
+      String rating = prefs.getString('rating')!;
 
-      Provider.of<ImageData>(context, listen: false).updateimage(File(image));
+      Provider.of<ImageData>(context, listen: false)
+          .updateimage(File(image), null);
       UserAccount userAccData = UserAccount(
+          CarClass: carClass,
+          CarModel: carModel,
+          CarNumber: carNumber,
+          CarUrl: carUrl,
+          rating: rating,
           Email: email,
           Image: image ?? "",
           Ph: ph,
@@ -155,7 +210,7 @@ class _MyAppState extends State<MyApp> {
       duration: 5500,
       splash: 'asset/Animation/cab-animation.gif',
       backgroundColor: Colors.white,
-      nextScreen: uid == "" ? Welcome(app: app) : Dashboard(app: app),
+      nextScreen: uid == "" ? Welcome(app: app) : Maps(app: app),
       splashIconSize: 350,
     );
   }

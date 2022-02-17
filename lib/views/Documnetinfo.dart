@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 class Documentinfo extends StatefulWidget {
   const Documentinfo({Key? key}) : super(key: key);
 
@@ -41,8 +41,8 @@ class _DocumentinfoState extends State<Documentinfo> {
                 ),
                 Center(
                   child: Text(
-                    "Documnet Needed",
-                    style: TextStyle(fontSize: 28),
+                    "Document Needed",
+                    style: GoogleFonts.openSans(fontSize: 28),
                   ),
                 ),
                 SizedBox(
@@ -50,41 +50,41 @@ class _DocumentinfoState extends State<Documentinfo> {
                 ),
                 Text(
                   "1.Driver's License.",
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.openSans(fontSize: 16),
                 ),
                 SizedBox(
                   height: 15,
                 ),
                 Text(
                   "2.Registration Certificate.",
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.openSans(fontSize: 16),
                 ),
                 SizedBox(
                   height: 15,
                 ),
                 Text(
                   "3.Vehicle Insurance.",
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.openSans(fontSize: 16),
                 ),
                 SizedBox(
                   height: 15,
                 ),
                 Text(
                   "4.Contract Carriage Permit..",
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.openSans(fontSize: 16),
                 ),
                 SizedBox(
                   height: 15,
                 ),
                 Text(
                   "5.Tourist Taxi Permit.",
-                  style: TextStyle(fontSize: 16),
+                  style: GoogleFonts.openSans(fontSize: 16),
                 ),
                 SizedBox(
                   height: 34,
                 ),
                 Text(
-                    "Note : The Documnet name should relevanet example for Driver's license the file name should be Driver_license.pdf \n\nYou will get respond with in 2 weeks via mail for more info conntact us on Traveltreathelp@gmail.com"),
+                    "Note : The Document name should relevant to file example for Driver's license the file name should be Driver_license.pdf \n\nYou will get respond with in 2 weeks via mail for more info conntact us on Traveltreathelp@gmail.com",style:GoogleFonts.openSans(fontSize: 15,fontWeight: FontWeight.w600,)),
               ],
             ),
           ),

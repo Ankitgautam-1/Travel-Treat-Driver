@@ -1,4 +1,4 @@
-import 'package:driver/views/Dashboard.dart';
+import 'package:driver/views/Maps.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +9,7 @@ import 'package:open_apps_settings/open_apps_settings.dart';
 import 'package:open_apps_settings/settings_enum.dart';
 import 'package:permission_handler/permission_handler.dart' as permissions;
 import 'package:location/location.dart' as loc;
+import 'package:google_fonts/google_fonts.dart';
 
 class LocationPermissoin extends StatefulWidget {
   final FirebaseApp app;
@@ -23,7 +24,7 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
   _LocationPermissoinState({required this.app});
   loc.Location location = loc.Location();
   final LocationPermissionLevel _permissionLevel =
-      LocationPermissionLevel.locationWhenInUse;
+      LocationPermissionLevel.locationAlways;
 
   Future<void> requestPermission(
       LocationPermissionLevel permissionLevel) async {
@@ -51,7 +52,7 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
             settingsCode: SettingsCode.LOCATION,
             onCompletion: () async {
               if (await location.serviceEnabled()) {
-                Get.offAll(Dashboard(app: app));
+                Get.offAll(Maps(app: app));
               } else {
                 Get.snackbar(
                   "Location Permission ",
@@ -64,7 +65,7 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
         },
       );
     } else {
-      Get.offAll(Dashboard(app: app));
+      Get.offAll(Maps(app: app));
     }
   }
 
@@ -82,7 +83,7 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
             children: [
               Text(
                 "Location Permission",
-                style: TextStyle(fontSize: 30),
+                style: GoogleFonts.openSans(fontSize: 30,fontWeight: FontWeight.w600),
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
@@ -93,7 +94,7 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
               ),
               TextButton.icon(
                 icon: Icon(Icons.location_on_rounded),
-                label: Text("Give Permission"),
+                label: Text("Give Permission",style: GoogleFonts.openSans(fontSize: 15,fontWeight: FontWeight.w500),),
                 style: ElevatedButton.styleFrom(
                   onPrimary: Color.fromRGBO(28, 18, 140, 1),
                   primary: Colors.white,
@@ -113,7 +114,7 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
                 height: 35,
               ),
               TextButton.icon(
-                label: Text("Open Settings"),
+                label: Text("Open Settings",style: GoogleFonts.openSans(fontSize: 15,fontWeight: FontWeight.w500),),
                 icon: Icon(CupertinoIcons.settings),
                 style: ElevatedButton.styleFrom(
                     onPrimary: Colors.white,

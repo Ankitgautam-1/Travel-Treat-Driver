@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:driver/Data/accountProvider.dart';
 import 'package:driver/models/userAccount.dart';
@@ -39,28 +40,18 @@ class _WelcomeState extends State<Welcome> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              SizedBox(height: 160),
+              SizedBox(height: 130),
               Padding(
                 padding: const EdgeInsets.only(left: 5, right: 150),
                 child: Text(
-                  'Welcome to',
-                  style: TextStyle(
-                    fontSize: 32,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 5, right: 150),
-                child: Text(
-                  'Travel Treat',
-                  style: TextStyle(
-                    fontSize: 32,
-                  ),
+                  'Welcome to\nTravel Treat',
+                  style: GoogleFonts.roboto(
+                      fontSize: 35, fontWeight: FontWeight.w500),
                 ),
               ),
               SizedBox(height: 30),
               Image.asset(
-                'asset/images/register_bg.jpg',
+                'asset/images/2nd_image.png',
                 width: 360,
               ),
               SizedBox(height: 28),
@@ -78,7 +69,7 @@ class _WelcomeState extends State<Welcome> {
                 },
                 child: Text(
                   ' Sign In ',
-                  style: TextStyle(
+                  style: GoogleFonts.roboto(
                     fontSize: 16,
                   ),
                 ),
@@ -96,23 +87,16 @@ class _WelcomeState extends State<Welcome> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Don\'t have an Account ?',
-                    style: TextStyle(
-                      fontSize: 16,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
+                  Text('Don\'t have an Account ?',
+                      style: GoogleFonts.roboto(
+                          color: Colors.black, fontSize: 16)),
+                  GestureDetector(
+                    onTap: () {
                       Get.to(SignUp(app: app));
                     },
-                    child: Text(
-                      ' Sign Up',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.blue,
-                      ),
-                    ),
+                    child: Text(' Sign Up',
+                        style: GoogleFonts.roboto(
+                            color: Colors.blue, fontSize: 16)),
                   ),
                 ],
               ),
