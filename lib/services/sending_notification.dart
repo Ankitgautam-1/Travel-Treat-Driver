@@ -46,6 +46,35 @@ class Msg {
     }
   }
 
+  Future<void> sendStartTrip(String token) async {
+    Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+    dynamic bodydata = jsonEncode(<String, dynamic>{
+      "data": {
+        "type": "Start Trip",
+      },
+      "to": token
+    });
+    print("Url = $url");
+    try {
+      final response = await http.post(url, headers: _headers, body: bodydata);
+      if (response.statusCode == 200) {
+        try {
+          // If server returns an OK response, parse the JSON.
+          print("Json Data :----> ${response.body}");
+          dynamic a = response.body.runtimeType;
+          print("types :$a");
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error is :$e");
+      return null;
+    }
+  }
+
   Future<dynamic> sendCancelRidereq(
     String token,
   ) async {
@@ -55,6 +84,106 @@ class Msg {
         "type": "Ride Cancel",
         "image": "https://firebase.google.com/images/social.png",
         "message": "No bro i can't"
+      },
+      "to": token
+    });
+    print("Url = $url");
+    try {
+      final response = await http.post(url, headers: _headers, body: bodydata);
+      if (response.statusCode == 200) {
+        try {
+          // If server returns an OK response, parse the JSON.
+          print("Json Data :----> ${response.body}");
+          dynamic a = response.body.runtimeType;
+          print("types :$a");
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error is :$e");
+      return null;
+    }
+  }
+
+  Future<dynamic> sendCancelTrip(
+    String token,
+  ) async {
+    Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+    dynamic bodydata = jsonEncode(<String, dynamic>{
+      "data": {
+        "type": "Cancel Trip",
+        "image": "https://firebase.google.com/images/social.png",
+        "message": "No bro i can't"
+      },
+      "to": token
+    });
+    print("Url = $url");
+    try {
+      final response = await http.post(url, headers: _headers, body: bodydata);
+      if (response.statusCode == 200) {
+        try {
+          // If server returns an OK response, parse the JSON.
+          print("Json Data :----> ${response.body}");
+          dynamic a = response.body.runtimeType;
+          print("types :$a");
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error is :$e");
+      return null;
+    }
+  }
+
+  Future<dynamic> sendUpdateRatingValue(
+    String token,
+    String rating,
+  ) async {
+    Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+    dynamic bodydata = jsonEncode(<String, dynamic>{
+      "data": {
+        "type": "Cancel Trip",
+        "image": "https://firebase.google.com/images/social.png",
+        "message": "No bro i can't"
+      },
+      "to": token
+    });
+    print("Url = $url");
+    try {
+      final response = await http.post(url, headers: _headers, body: bodydata);
+      if (response.statusCode == 200) {
+        try {
+          // If server returns an OK response, parse the JSON.
+          print("Json Data :----> ${response.body}");
+          dynamic a = response.body.runtimeType;
+          print("types :$a");
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error is :$e");
+      return null;
+    }
+  }
+
+  Future<dynamic> sendCashPaymentApprove(
+    String token,
+    String docid,
+  ) async {
+    Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+    dynamic bodydata = jsonEncode(<String, dynamic>{
+      "data": {
+        "type": "Cash Payment Approve",
+        "docid": docid,
       },
       "to": token
     });
@@ -90,8 +219,7 @@ class Msg {
       String cab_model,
       String cab_number,
       String rating,
-      String drivers_token
-      ) async {
+      String drivers_token) async {
     Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
     dynamic bodydata = jsonEncode(<String, dynamic>{
       "data": {
@@ -109,7 +237,7 @@ class Msg {
         "cab_model": cab_model,
         "cab_number": cab_number,
         "rating": rating,
-        "drivers_token":drivers_token,
+        "drivers_token": drivers_token,
       },
       "to": usertoken
     });

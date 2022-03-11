@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:driver/Data/connectivityProvider.dart';
 import 'package:driver/Data/files.dart';
 import 'package:driver/Data/passengerProvider.dart';
+import 'package:driver/Data/ratingProvider.dart';
 import 'package:driver/models/Direction_provider.dart';
 import 'package:driver/services/notification_service.dart';
 import 'package:driver/views/Location_permission.dart';
@@ -79,9 +81,6 @@ Future<void> main() async {
         ChangeNotifierProvider<UserData>(
           create: (context) => UserData(),
         ),
-        ChangeNotifierProvider<AccountProvider>(
-          create: (context) => AccountProvider(),
-        ),
         ChangeNotifierProvider<ImageData>(
           create: (context) => ImageData(),
         ),
@@ -93,6 +92,15 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<PassengerProvider>(
           create: (context) => PassengerProvider(),
+        ),
+        ChangeNotifierProvider<Connection>(
+          create: (context) => Connection(),
+        ),
+        ChangeNotifierProvider<AccountProvider>(
+          create: (context) => AccountProvider(),
+        ),
+        ChangeNotifierProvider<RatingProvider>(
+          create: (context) => RatingProvider(),
         ),
       ],
       child: GetMaterialApp(

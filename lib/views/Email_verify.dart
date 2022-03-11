@@ -262,6 +262,9 @@ class _EmailVerifyState extends State<EmailVerify> {
             "Image": prof.path
           },
         );
+        setState(() {
+          isuploading = false;
+        });
         Get.snackbar(
           "Account Creation",
           "Your response has been collected we will varify the details and give our response in with next 2 weeks for more details for more in for more info please contact us on Traveltraethelp@gmail.com ",

@@ -2,7 +2,7 @@ import 'package:driver/views/Maps.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import 'package:get/get.dart';
 import 'package:location_permissions/location_permissions.dart';
 import 'package:open_apps_settings/open_apps_settings.dart';
@@ -10,6 +10,7 @@ import 'package:open_apps_settings/settings_enum.dart';
 import 'package:permission_handler/permission_handler.dart' as permissions;
 import 'package:location/location.dart' as loc;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart' as permission;
 
 class LocationPermissoin extends StatefulWidget {
   final FirebaseApp app;
@@ -28,12 +29,12 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
 
   Future<void> requestPermission(
       LocationPermissionLevel permissionLevel) async {
-    final PermissionStatus permissionRequestResult = await LocationPermissions()
-        .requestPermissions(permissionLevel: permissionLevel);
-    print('Here ans:-$permissionRequestResult');
-    if (permissionRequestResult == PermissionStatus.denied ||
-        permissionRequestResult == PermissionStatus.restricted ||
-        permissionRequestResult == PermissionStatus.unknown) {
+    Map<dynamic, dynamic> status = await [
+      permission.Permission.locationWhenInUse,
+    ].request();
+
+    if (status.values.contains(false)) {
+      print('status: ${status.values}');
     } else {
       _checkGps();
     }
@@ -42,7 +43,9 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
   void _checkGps() async {
     bool locationServices = await location.serviceEnabled();
     print("val:$locationServices");
-    if (!locationServices) {
+    PermissionStatus permissionStatus = await LocationPermissions()
+        .checkPermissionStatus(level: _permissionLevel);
+    if (!locationServices && permissionStatus == PermissionStatus.denied) {
       Get.snackbar("Location Permission",
           "Location service is not enabled visting settings ");
       Future.delayed(
@@ -74,69 +77,93 @@ class _LocationPermissoinState extends State<LocationPermissoin> {
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: Container(
-          height: MediaQuery.of(context).size.height * 0.80,
-          width: MediaQuery.of(context).size.width,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                "Location Permission",
-                style: GoogleFonts.openSans(fontSize: 30,fontWeight: FontWeight.w600),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Image.asset(
-                  'asset/images/location_permission.jpg',
-                  width: MediaQuery.of(context).size.width * 0.9,
-                ),
-              ),
-              TextButton.icon(
-                icon: Icon(Icons.location_on_rounded),
-                label: Text("Give Permission",style: GoogleFonts.openSans(fontSize: 15,fontWeight: FontWeight.w500),),
-                style: ElevatedButton.styleFrom(
-                  onPrimary: Color.fromRGBO(28, 18, 140, 1),
-                  primary: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      width: 1,
-                      color: Color.fromRGBO(28, 18, 140, 1),
+        body: Flex(
+          direction: Axis.vertical,
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                child: SingleChildScrollView(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Location Permission",
+                          style: GoogleFonts.openSans(
+                              fontSize: 30, fontWeight: FontWeight.w600),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Image.asset(
+                            'asset/images/location_permission.jpg',
+                            width: MediaQuery.of(context).size.width * 0.9,
+                          ),
+                        ),
+                        TextButton.icon(
+                          icon: Icon(Icons.location_on_rounded),
+                          label: Text(
+                            "Give Permission",
+                            style: GoogleFonts.openSans(
+                                fontSize: 15, fontWeight: FontWeight.w500),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            onPrimary: Color.fromRGBO(28, 18, 140, 1),
+                            primary: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(
+                                width: 1,
+                                color: Color.fromRGBO(28, 18, 140, 1),
+                              ),
+                            ),
+                          ),
+                          onPressed: () async {
+                            await requestPermission(_permissionLevel);
+                          },
+                        ),
+                        SizedBox(
+                          height: 35,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 18.0),
+                          child: TextButton.icon(
+                            label: Text(
+                              "Open Settings",
+                              style: GoogleFonts.openSans(
+                                  fontSize: 15, fontWeight: FontWeight.w500),
+                            ),
+                            icon: Icon(CupertinoIcons.settings),
+                            style: ElevatedButton.styleFrom(
+                                onPrimary: Colors.white,
+                                primary: Color.fromRGBO(28, 18, 140, 1),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10))),
+                            onPressed: () async {
+                              await OpenAppsSettings.openAppsSettings(
+                                  settingsCode: SettingsCode.APP_SETTINGS,
+                                  onCompletion: () async {
+                                    if (await permissions.Permission.locationWhenInUse.isGranted ||
+                                        await permissions.Permission
+                                            .locationWhenInUse.isLimited ||
+                                        await permissions
+                                            .Permission.location.isGranted ||
+                                        await permissions
+                                            .Permission.location.isLimited) {
+                                      _checkGps();
+                                    }
+                                  });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                onPressed: () async {
-                  await requestPermission(_permissionLevel);
-                },
               ),
-              SizedBox(
-                height: 35,
-              ),
-              TextButton.icon(
-                label: Text("Open Settings",style: GoogleFonts.openSans(fontSize: 15,fontWeight: FontWeight.w500),),
-                icon: Icon(CupertinoIcons.settings),
-                style: ElevatedButton.styleFrom(
-                    onPrimary: Colors.white,
-                    primary: Color.fromRGBO(28, 18, 140, 1),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                onPressed: () async {
-                  await OpenAppsSettings.openAppsSettings(
-                      settingsCode: SettingsCode.APP_SETTINGS,
-                      onCompletion: () async {
-                        if (await permissions.Permission.locationWhenInUse.isGranted ||
-                            await permissions
-                                .Permission.locationWhenInUse.isLimited ||
-                            await permissions.Permission.location.isGranted ||
-                            await permissions.Permission.location.isLimited) {
-                          _checkGps();
-                        }
-                      });
-                },
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

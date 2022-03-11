@@ -59,7 +59,7 @@ class _SignInState extends State<SignIn> {
 
         try {
           await _auth.signInWithEmailAndPassword(
-              email: _email.text, password: _pass.text);
+              email: _email.text.trim(), password: _pass.text);
 
           User? user = _auth.currentUser;
           var uid = user!.uid;
@@ -103,7 +103,7 @@ class _SignInState extends State<SignIn> {
 
             Provider.of<AccountProvider>(context, listen: false)
                 .updateuseraccount(userAccount);
-
+            print("userAccount $userAccount");
             SharedPreferences prefs = await SharedPreferences.getInstance();
             prefs.setString("Uid", user.uid);
             prefs.setString("Username", username!);
@@ -263,9 +263,10 @@ class _SignInState extends State<SignIn> {
                                 child: TextFormField(
                                   cursorColor: Colors.black,
                                   controller: _email,
-                                  validator: (val) => val!.isEmail
-                                      ? null
-                                      : "Enter valide email",
+                                  validator: (val) =>
+                                      val!.toString().trim().isEmail
+                                          ? null
+                                          : "Enter valide email",
                                   keyboardType: TextInputType.text,
                                   style: GoogleFonts.openSans(
                                     fontSize: 15,
