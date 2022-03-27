@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
-import 'dart:io';
-import 'dart:math';
 
+import 'dart:math';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+
+import '';
 import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:driver/Data/connectivityProvider.dart';
 import 'package:driver/Data/ratingProvider.dart';
@@ -16,11 +19,9 @@ import 'package:driver/views/Settings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
+
 import 'package:flutter_animated_dialog/flutter_animated_dialog.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -29,15 +30,15 @@ import 'package:geoflutterfire/geoflutterfire.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:driver/Data/accountProvider.dart';
-import 'package:driver/Data/image.dart';
+
 import 'package:driver/Data/userData.dart';
 import 'package:driver/models/userAccount.dart';
 import 'package:driver/models/userAddress.dart';
 import 'package:driver/services/assistantmethod.dart';
 import 'package:driver/services/sending_notification.dart';
-import 'package:driver/views/Dashboard.dart';
+
 import 'package:driver/views/Welcome.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:line_icons/line_icon.dart';
@@ -110,10 +111,13 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
   String user_uid = "";
   String cab_type = "";
   String payment_type = "";
+  String user_email = "";
   String user_token = "";
   bool goingtopicup = false;
+  String startTrip = "";
   late Directions directions;
   late Timer timer;
+
   TextEditingController reviewController = TextEditingController(text: '');
   TextEditingController reviewMessageController =
       TextEditingController(text: '');
@@ -200,7 +204,9 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
         user_trip_time = userData["travel_time"];
         user_rating = userData["user_rating"];
         cab_type = userData["cab_type"];
+        startTrip = DateTime.now().toString();
         payment_type = userData["payment_type"];
+        user_email = userData["user_email"];
 
         showDialog(
             useSafeArea: true,
@@ -502,13 +508,8 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
           prefs.setBool("status", false);
         });
       } else if (message.data["type"] == "Payment Cash") {
-        await FlutterLocalNotificationsPlugin()
-            .show(12345, "Get the Payment", "${message.data["type"]}",
-                platformChannelSpecifics,
-                payload: 'sending from user')
-            .then((value) => print(" print done"))
-            .onError((error, stackTrace) => print("got error"));
         showDialog(
+            barrierDismissible: false,
             context: context,
             builder: (builder) {
               return ClassicGeneralDialogWidget(
@@ -561,527 +562,577 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                               ),
                               onPressed: () {
                                 DateTime now = DateTime.now();
-                                var current = now.toLocal().toString();
+                                var current_time = now.toLocal().toString();
                                 var collectionReference =
                                     _firestore.collection('Trip_collection');
-                                trip_docid = user_uid + "_" + current;
+                                trip_docid = user_uid + "_" + current_time;
                                 Msg()
                                     .sendCashPaymentApprove(
                                         userstoken, trip_docid)
                                     .then((value) {
                                   collectionReference
-                                    ..doc(user_uid + "_" + current).set({
-                                      "userDetails": {
-                                        "user_uid": user_uid,
-                                        "user_image": user_image,
-                                        "user_phone": user_phone,
-                                        "user_name": user_name,
-                                        "user_pickup_lat": user_pickup_lat,
-                                        "user_pickup_long": user_pickup_long,
-                                        "user_pickup_address":
-                                            user_pickup_address,
-                                        "user_destination_lat":
-                                            user_destination_lat,
-                                        "user_destination_long":
-                                            user_destination_long,
-                                        "user_destination_address":
-                                            user_destination_address,
-                                        "user_trip_charge": user_trip_charge,
-                                        "user_trip_distance":
-                                            user_trip_distance,
-                                        "user_trip_time": user_trip_time,
-                                      },
-                                      'driverDetails': {
-                                        'driver_uid':
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .Uid,
-                                        'driver_profile':
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .Image,
-                                        'driver_email':
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .Email,
-                                        'driver_name':
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .Username,
-                                        'driver_phone':
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .Ph,
-                                        'driver_rating':
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .rating,
-                                      },
-                                      'cabDetails': {
-                                        "cab_type":
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .CarClass,
-                                        "cab_number":
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .CarNumber,
-                                        "cab_image":
-                                            Provider.of<AccountProvider>(
-                                                    context,
-                                                    listen: false)
-                                                .userAccount
-                                                .CarUrl,
-                                      },
-                                      'paymentDetails': {
-                                        "payment_type": payment_type,
-                                        "payment_amount": user_trip_charge,
-                                        "payment_time": current,
-                                      },
-                                      "trip_end_time": current,
-                                    }).then((value) {
-                                      while (Navigator.of(context,
-                                              rootNavigator: true)
-                                          .canPop()) {
-                                        Navigator.of(context,
-                                                rootNavigator: true)
-                                            .pop('dialog');
-                                      }
-                                      showDialog(
-                                          context: context,
-                                          builder: (builder) {
-                                            return ClassicGeneralDialogWidget(
-                                              actions: [
-                                                Padding(
-                                                  padding: const EdgeInsets
-                                                          .symmetric(
-                                                      vertical: 8,
-                                                      horizontal: 6),
-                                                  child: SingleChildScrollView(
-                                                    child: Column(
-                                                      children: [
-                                                        Text(
-                                                          "Trip Reviews",
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                  fontSize: 20),
-                                                        ),
-                                                        AnimatedTextKit(
-                                                          animatedTexts: [
-                                                            ColorizeAnimatedText(
-                                                                "Share Your Ride Experience",
-                                                                textStyle:
-                                                                    GoogleFonts
-                                                                        .poppins(
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                ),
-                                                                colors: [
-                                                                  Colors.grey
-                                                                      .shade900,
-                                                                  Colors.grey
-                                                                      .shade300,
-                                                                ]),
-                                                          ],
-                                                          repeatForever: true,
-                                                        ),
-                                                        SizedBox(
-                                                          height: 10,
-                                                        ),
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            ClipRRect(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          18.0),
-                                                              child: Image.network(
-                                                                  user_image,
-                                                                  width: 70,
-                                                                  height: 70,
-                                                                  fit: BoxFit
-                                                                      .cover),
-                                                            ),
-                                                            SizedBox(
-                                                              width: 30,
-                                                            ),
-                                                            Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              children: [
-                                                                Text(user_name,
-                                                                    style: GoogleFonts.roboto(
-                                                                        fontSize:
-                                                                            16,
-                                                                        fontWeight:
-                                                                            FontWeight.w600)),
-                                                                Row(
-                                                                  children: [
-                                                                    Icon(
-                                                                      LineIcons
-                                                                          .starAlt,
-                                                                      color: Colors
-                                                                          .amber,
-                                                                    ),
-                                                                    Text(
-                                                                      user_rating,
-                                                                      textAlign:
-                                                                          TextAlign
-                                                                              .left,
-                                                                      style: GoogleFonts
-                                                                          .dmSans(
-                                                                        fontSize:
-                                                                            15,
-                                                                      ),
-                                                                    )
-                                                                  ],
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(
-                                                          height: 40,
-                                                          child: Row(
+                                      .doc(user_uid + "_" + current_time)
+                                      .set({
+                                    "userDetails": {
+                                      "user_uid": user_uid,
+                                      "user_image": user_image,
+                                      "user_phone": user_phone,
+                                      "user_name": user_name,
+                                      "user_pickup_lat": user_pickup_lat,
+                                      "user_pickup_long": user_pickup_long,
+                                      "user_pickup_address":
+                                          user_pickup_address,
+                                      "user_destination_lat":
+                                          user_destination_lat,
+                                      "user_destination_long":
+                                          user_destination_long,
+                                      "user_destination_address":
+                                          user_destination_address,
+                                      "user_trip_charge": user_trip_charge,
+                                      "user_trip_distance": user_trip_distance,
+                                      "user_trip_time": user_trip_time,
+                                      "user_email": user_email
+                                    },
+                                    'driverDetails': {
+                                      'driver_uid':
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .Uid,
+                                      'driver_profile':
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .Image,
+                                      'driver_email':
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .Email,
+                                      'driver_name':
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .Username,
+                                      'driver_phone':
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .Ph,
+                                      'driver_rating':
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .rating,
+                                    },
+                                    'cabDetails': {
+                                      "cab_type": Provider.of<AccountProvider>(
+                                              context,
+                                              listen: false)
+                                          .userAccount
+                                          .CarClass,
+                                      "cab_number":
+                                          Provider.of<AccountProvider>(context,
+                                                  listen: false)
+                                              .userAccount
+                                              .CarNumber,
+                                      "cab_image": Provider.of<AccountProvider>(
+                                              context,
+                                              listen: false)
+                                          .userAccount
+                                          .CarUrl,
+                                    },
+                                    'paymentDetails': {
+                                      "payment_type": payment_type,
+                                      "payment_amount": user_trip_charge,
+                                      "payment_time": current_time,
+                                    },
+                                    "trip_end_time": current_time,
+                                    'startTrip': startTrip,
+                                  }).then((value) async {
+                                    collectionReference = _firestore
+                                        .collection('Trip_in_progress');
+                                    collectionReference
+                                        .doc(user_uid)
+                                        .delete()
+                                        .then((e) {
+                                      subs.cancel();
+                                    });
+                                    SharedPreferences prefs =
+                                        await SharedPreferences.getInstance();
+                                    prefs.setBool("isinmidtrip", false);
+                                    prefs.setString("user_uid", "");
+
+                                    var response =
+                                        prefs.setBool("isinmidtrip", false);
+                                    setState(() {
+                                      placeMarker = [];
+                                      Provider.of<DirectionsProvider>(context,
+                                              listen: false)
+                                          .updateDirectionsProvider(
+                                              null, null, 0, 0, {});
+                                      var collectionReference = _firestore
+                                          .collection('Trip_in_progress');
+                                      var geoRef = geo.collection(
+                                          collectionRef: collectionReference);
+                                      geoRef.delete(user_uid);
+                                      subs.cancel();
+                                      setState(() {
+                                        trip_details = false;
+                                        isinmidtrip = false;
+
+                                        prefs.setBool("status", false);
+                                      });
+                                    });
+                                    while (Navigator.of(context,
+                                            rootNavigator: true)
+                                        .canPop()) {
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop('dialog');
+                                    }
+                                    showDialog(
+                                        barrierDismissible: false,
+                                        context: context,
+                                        builder: (builder) {
+                                          return ClassicGeneralDialogWidget(
+                                            actions: [
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 6),
+                                                child: SingleChildScrollView(
+                                                  child: Column(
+                                                    children: [
+                                                      Text(
+                                                        "Trip Reviews",
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                fontSize: 20),
+                                                      ),
+                                                      AnimatedTextKit(
+                                                        animatedTexts: [
+                                                          ColorizeAnimatedText(
+                                                              "Share Your Ride Experience",
+                                                              textStyle:
+                                                                  GoogleFonts
+                                                                      .poppins(
+                                                                fontSize: 15,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                              ),
+                                                              colors: [
+                                                                Colors.grey
+                                                                    .shade900,
+                                                                Colors.grey
+                                                                    .shade300,
+                                                              ]),
+                                                        ],
+                                                        repeatForever: true,
+                                                      ),
+                                                      SizedBox(
+                                                        height: 10,
+                                                      ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        18.0),
+                                                            child:
+                                                                Image.network(
+                                                                    user_image,
+                                                                    width: 70,
+                                                                    height: 70,
+                                                                    fit: BoxFit
+                                                                        .cover),
+                                                          ),
+                                                          SizedBox(
+                                                            width: 30,
+                                                          ),
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
                                                             children: [
-                                                              Consumer<
-                                                                      RatingProvider>(
-                                                                  builder:
-                                                                      (context,
-                                                                          value,
-                                                                          _) {
-                                                                return RatingBarIndicator(
-                                                                  rating: value
-                                                                      .rating,
-                                                                  itemBuilder:
-                                                                      (context,
-                                                                              index) =>
-                                                                          Icon(
-                                                                    Icons.star,
+                                                              Text(user_name,
+                                                                  style: GoogleFonts.roboto(
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w600)),
+                                                              Row(
+                                                                children: [
+                                                                  Icon(
+                                                                    LineIcons
+                                                                        .starAlt,
                                                                     color: Colors
                                                                         .amber,
                                                                   ),
-                                                                  itemCount: 5,
-                                                                  itemSize:
-                                                                      30.0,
-                                                                  direction: Axis
-                                                                      .horizontal,
-                                                                );
-                                                              }),
-                                                              Container(
-                                                                width: 80,
-                                                                padding: EdgeInsets
-                                                                    .only(
-                                                                        left:
-                                                                            20),
-                                                                child: Center(
-                                                                  child:
-                                                                      TextFormField(
-                                                                    onChanged:
-                                                                        (value) {
-                                                                      if (double.parse(value) >=
-                                                                              1.0 &&
-                                                                          double.parse(value) <=
-                                                                              5.0) {
-                                                                        Provider.of<RatingProvider>(context,
-                                                                                listen: false)
-                                                                            .setRating(double.parse(value));
-                                                                      }
-                                                                    },
-                                                                    controller:
-                                                                        reviewController,
-                                                                    keyboardType:
-                                                                        TextInputType
-                                                                            .number,
-                                                                    cursorColor:
+                                                                  Text(
+                                                                    user_rating,
+                                                                    textAlign:
+                                                                        TextAlign
+                                                                            .left,
+                                                                    style: GoogleFonts
+                                                                        .dmSans(
+                                                                      fontSize:
+                                                                          15,
+                                                                    ),
+                                                                  )
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      SizedBox(
+                                                        height: 40,
+                                                        child: Row(
+                                                          children: [
+                                                            Consumer<
+                                                                    RatingProvider>(
+                                                                builder:
+                                                                    (context,
+                                                                        value,
+                                                                        _) {
+                                                              return RatingBarIndicator(
+                                                                rating: value
+                                                                    .rating,
+                                                                itemBuilder:
+                                                                    (context,
+                                                                            index) =>
+                                                                        Icon(
+                                                                  Icons.star,
+                                                                  color: Colors
+                                                                      .amber,
+                                                                ),
+                                                                itemCount: 5,
+                                                                itemSize: 30.0,
+                                                                direction: Axis
+                                                                    .horizontal,
+                                                              );
+                                                            }),
+                                                            Container(
+                                                              width: 80,
+                                                              padding: EdgeInsets
+                                                                  .only(
+                                                                      left: 20),
+                                                              child: Center(
+                                                                child:
+                                                                    TextFormField(
+                                                                  onChanged:
+                                                                      (value) {
+                                                                    if (double.parse(value) >=
+                                                                            1.0 &&
+                                                                        double.parse(value) <=
+                                                                            5.0) {
+                                                                      Provider.of<RatingProvider>(
+                                                                              context,
+                                                                              listen:
+                                                                                  false)
+                                                                          .setRating(
+                                                                              double.parse(value));
+                                                                    }
+                                                                  },
+                                                                  controller:
+                                                                      reviewController,
+                                                                  keyboardType:
+                                                                      TextInputType
+                                                                          .number,
+                                                                  cursorColor:
+                                                                      Colors
+                                                                          .black,
+                                                                  decoration:
+                                                                      InputDecoration(
+                                                                    contentPadding:
+                                                                        EdgeInsets.only(
+                                                                            top:
+                                                                                6,
+                                                                            left:
+                                                                                12),
+                                                                    hintText:
+                                                                        '4.4',
+                                                                    filled:
+                                                                        true,
+                                                                    fillColor:
+                                                                        Colors.grey[
+                                                                            300],
+                                                                    focusColor:
                                                                         Colors
                                                                             .black,
-                                                                    decoration:
-                                                                        InputDecoration(
-                                                                      contentPadding: EdgeInsets.only(
-                                                                          top:
-                                                                              6,
-                                                                          left:
-                                                                              12),
-                                                                      hintText:
-                                                                          '4.4',
-                                                                      filled:
-                                                                          true,
-                                                                      fillColor:
-                                                                          Colors
-                                                                              .grey[300],
-                                                                      focusColor:
-                                                                          Colors
-                                                                              .black,
-                                                                      focusedBorder:
-                                                                          OutlineInputBorder(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(5.0),
-                                                                        borderSide:
-                                                                            BorderSide(
-                                                                          color:
-                                                                              Colors.black,
-                                                                        ),
+                                                                    focusedBorder:
+                                                                        OutlineInputBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              5.0),
+                                                                      borderSide:
+                                                                          BorderSide(
+                                                                        color: Colors
+                                                                            .black,
                                                                       ),
-                                                                      border:
-                                                                          OutlineInputBorder(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(5.0),
-                                                                        borderSide:
-                                                                            BorderSide(
-                                                                          color:
-                                                                              Colors.grey,
-                                                                        ),
+                                                                    ),
+                                                                    border:
+                                                                        OutlineInputBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              5.0),
+                                                                      borderSide:
+                                                                          BorderSide(
+                                                                        color: Colors
+                                                                            .grey,
                                                                       ),
                                                                     ),
                                                                   ),
                                                                 ),
                                                               ),
-                                                            ],
-                                                          ),
+                                                            ),
+                                                          ],
                                                         ),
-                                                        SizedBox(
-                                                          height: 20,
-                                                        ),
-                                                        SizedBox(
-                                                          height: 35,
-                                                          width: 250,
-                                                          child: TextFormField(
-                                                            style: GoogleFonts
+                                                      ),
+                                                      SizedBox(
+                                                        height: 20,
+                                                      ),
+                                                      SizedBox(
+                                                        height: 35,
+                                                        width: 250,
+                                                        child: TextFormField(
+                                                          style: GoogleFonts
+                                                              .montserrat(
+                                                                  fontSize: 15,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400),
+                                                          controller:
+                                                              reviewMessageController,
+                                                          keyboardType:
+                                                              TextInputType
+                                                                  .text,
+                                                          cursorColor:
+                                                              Colors.black,
+                                                          decoration:
+                                                              InputDecoration(
+                                                            contentPadding:
+                                                                EdgeInsets.only(
+                                                                    top: 6,
+                                                                    left: 12),
+                                                            hintText:
+                                                                "Write a review",
+                                                            hintStyle: GoogleFonts
                                                                 .montserrat(
                                                                     fontSize:
                                                                         15,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .w400),
-                                                            controller:
-                                                                reviewMessageController,
-                                                            keyboardType:
-                                                                TextInputType
-                                                                    .text,
-                                                            cursorColor:
+                                                            focusColor:
                                                                 Colors.black,
-                                                            decoration:
-                                                                InputDecoration(
-                                                              contentPadding:
-                                                                  EdgeInsets.only(
-                                                                      top: 6,
-                                                                      left: 12),
-                                                              hintText:
-                                                                  "Write a review",
-                                                              hintStyle: GoogleFonts
-                                                                  .montserrat(
-                                                                      fontSize:
-                                                                          15,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w400),
-                                                              focusColor:
-                                                                  Colors.black,
-                                                              focusedBorder:
-                                                                  OutlineInputBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            5.0),
-                                                                borderSide:
-                                                                    BorderSide(
-                                                                  color: Colors
-                                                                      .black,
-                                                                ),
+                                                            focusedBorder:
+                                                                OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          5.0),
+                                                              borderSide:
+                                                                  BorderSide(
+                                                                color: Colors
+                                                                    .black,
                                                               ),
-                                                              border:
-                                                                  OutlineInputBorder(
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            5.0),
-                                                                borderSide:
-                                                                    BorderSide(
-                                                                  color: Colors
-                                                                      .grey,
-                                                                ),
+                                                            ),
+                                                            border:
+                                                                OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          5.0),
+                                                              borderSide:
+                                                                  BorderSide(
+                                                                color:
+                                                                    Colors.grey,
                                                               ),
                                                             ),
                                                           ),
                                                         ),
-                                                        SizedBox(
-                                                          height: 10,
-                                                        ),
-                                                        Container(
-                                                          width: 250,
-                                                          child: Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .spaceAround,
-                                                            children: [
-                                                              ElevatedButton(
-                                                                  style: ElevatedButton
-                                                                      .styleFrom(
+                                                      ),
+                                                      SizedBox(
+                                                        height: 10,
+                                                      ),
+                                                      Container(
+                                                        width: 250,
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceAround,
+                                                          children: [
+                                                            ElevatedButton(
+                                                                style: ElevatedButton
+                                                                    .styleFrom(
+                                                                  padding: EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          10,
+                                                                      horizontal:
+                                                                          30),
+                                                                  primary: Colors
+                                                                      .black,
+                                                                  onPrimary:
+                                                                      Colors
+                                                                          .white,
+                                                                ),
+                                                                onPressed: () {
+                                                                  if (reviewMessageController
+                                                                          .text
+                                                                          .trim() !=
+                                                                      "") {
+                                                                    var collectionReference =
+                                                                        _firestore
+                                                                            .collection('Trip_collection');
+                                                                    collectionReference
+                                                                        .doc(
+                                                                            trip_docid)
+                                                                        .update({
+                                                                      "driver_review":
+                                                                          "${reviewMessageController.text.trim()}",
+                                                                    });
+                                                                    var avg;
+                                                                    if (reviewController
+                                                                            .text
+                                                                            .trim() !=
+                                                                        "") {
+                                                                      _firestore
+                                                                          .collection(
+                                                                              'Users')
+                                                                          .doc(
+                                                                              trip_docid)
+                                                                          .get()
+                                                                          .then(
+                                                                              (value) {
+                                                                        double
+                                                                            total =
+                                                                            0.0;
+                                                                        var last_5_ride_rating =
+                                                                            value.data()!['last_5_ride_rating'];
+                                                                        last_5_ride_rating
+                                                                            .removeAt(0);
+                                                                        last_5_ride_rating.add(reviewController
+                                                                            .text
+                                                                            .trim());
+                                                                        for (int i =
+                                                                                0;
+                                                                            i < last_5_ride_rating.length;
+                                                                            i++) {
+                                                                          total =
+                                                                              total + double.parse(last_5_ride_rating[i]);
+                                                                        }
+                                                                        avg = total /
+                                                                            5;
+                                                                        if (avg.toString().length >
+                                                                            2) {
+                                                                          print(
+                                                                              "real value $avg");
+                                                                          avg = double.parse(avg.toString().substring(
+                                                                              0,
+                                                                              3));
+                                                                        }
+                                                                        _firestore
+                                                                            .collection(
+                                                                                'Users')
+                                                                            .doc(
+                                                                                trip_docid)
+                                                                            .update({
+                                                                          'rating':
+                                                                              avg
+                                                                        });
+                                                                        Msg().sendUpdateRatingValue(
+                                                                            user_token,
+                                                                            avg);
+                                                                      });
+                                                                    }
+                                                                    while (Navigator.of(
+                                                                            context,
+                                                                            rootNavigator:
+                                                                                true)
+                                                                        .canPop()) {
+                                                                      Navigator.of(
+                                                                              context,
+                                                                              rootNavigator: true)
+                                                                          .pop('dialog');
+                                                                    }
+
+                                                                    reviewMessageController
+                                                                        .text = "";
+                                                                  } else {
+                                                                    _scaffoldKey
+                                                                        .currentState!
+                                                                        .showSnackBar(
+                                                                      SnackBar(
+                                                                        content:
+                                                                            Text("Please write a review"),
+                                                                        duration:
+                                                                            Duration(seconds: 2),
+                                                                      ),
+                                                                    );
+                                                                  }
+                                                                },
+                                                                child: Text(
+                                                                    "Submit",
+                                                                    style: GoogleFonts.montserrat(
+                                                                        fontSize:
+                                                                            13,
+                                                                        fontWeight:
+                                                                            FontWeight.w400))),
+                                                            ElevatedButton(
+                                                                style: ElevatedButton.styleFrom(
                                                                     padding: EdgeInsets.symmetric(
                                                                         vertical:
                                                                             10,
                                                                         horizontal:
                                                                             30),
                                                                     primary: Colors
-                                                                        .black,
+                                                                        .white,
                                                                     onPrimary:
                                                                         Colors
-                                                                            .white,
-                                                                  ),
-                                                                  onPressed:
-                                                                      () {
-                                                                    if (reviewMessageController
-                                                                            .text
-                                                                            .trim() !=
-                                                                        "") {
-                                                                      var collectionReference =
-                                                                          _firestore
-                                                                              .collection('Trip_collection');
-                                                                      collectionReference
-                                                                          .doc(
-                                                                              trip_docid)
-                                                                          .update({
-                                                                        "driver_review":
-                                                                            "${reviewMessageController.text.trim()}",
-                                                                      });
-                                                                      var avg;
-                                                                      if (reviewController
-                                                                              .text
-                                                                              .trim() !=
-                                                                          "") {
-                                                                        _firestore
-                                                                            .collection('Users')
-                                                                            .doc(trip_docid)
-                                                                            .get()
-                                                                            .then((value) {
-                                                                          double
-                                                                              total =
-                                                                              0.0;
-                                                                          var last_5_ride_rating =
-                                                                              value.data()!['last_5_ride_rating'];
-                                                                          last_5_ride_rating
-                                                                              .removeAt(0);
-                                                                          last_5_ride_rating.add(reviewController
-                                                                              .text
-                                                                              .trim());
-                                                                          for (int i = 0;
-                                                                              i < last_5_ride_rating.length;
-                                                                              i++) {
-                                                                            total =
-                                                                                total + double.parse(last_5_ride_rating[i]);
-                                                                          }
-                                                                          avg = total /
-                                                                              5;
-                                                                          if (avg.toString().length >
-                                                                              2) {
-                                                                            print("real value $avg");
-                                                                            avg =
-                                                                                double.parse(avg.toString().substring(0, 3));
-                                                                          }
-                                                                          _firestore
-                                                                              .collection(
-                                                                                  'Users')
-                                                                              .doc(
-                                                                                  trip_docid)
-                                                                              .update({
-                                                                            'rating':
-                                                                                avg
-                                                                          });
-                                                                          Msg().sendUpdateRatingValue(
-                                                                              user_token,
-                                                                              avg);
-                                                                        });
-                                                                      }
-                                                                      while (Navigator.of(
-                                                                              context,
-                                                                              rootNavigator: true)
-                                                                          .canPop()) {
-                                                                        Navigator.of(context,
-                                                                                rootNavigator: true)
-                                                                            .pop('dialog');
-                                                                      }
-
-                                                                      reviewMessageController
-                                                                          .text = "";
-                                                                    } else {
-                                                                      _scaffoldKey
-                                                                          .currentState!
-                                                                          .showSnackBar(
-                                                                        SnackBar(
-                                                                          content:
-                                                                              Text("Please write a review"),
-                                                                          duration:
-                                                                              Duration(seconds: 2),
-                                                                        ),
-                                                                      );
-                                                                    }
-                                                                  },
-                                                                  child: Text(
-                                                                      "Submit",
-                                                                      style: GoogleFonts.montserrat(
-                                                                          fontSize:
-                                                                              13,
-                                                                          fontWeight:
-                                                                              FontWeight.w400))),
-                                                              ElevatedButton(
-                                                                  style: ElevatedButton.styleFrom(
-                                                                      padding: EdgeInsets.symmetric(
-                                                                          vertical:
-                                                                              10,
-                                                                          horizontal:
-                                                                              30),
-                                                                      primary:
-                                                                          Colors
-                                                                              .white,
-                                                                      onPrimary:
-                                                                          Colors
-                                                                              .black),
-                                                                  onPressed:
-                                                                      () {},
-                                                                  child: Text(
-                                                                      "Cancel",
-                                                                      style: GoogleFonts.montserrat(
-                                                                          fontSize:
-                                                                              13,
-                                                                          fontWeight:
-                                                                              FontWeight.w400))),
-                                                            ],
-                                                          ),
-                                                        )
-                                                      ],
-                                                    ),
+                                                                            .black),
+                                                                onPressed: () {
+                                                                  while (Navigator.of(
+                                                                          context,
+                                                                          rootNavigator:
+                                                                              true)
+                                                                      .canPop()) {
+                                                                    Navigator.of(
+                                                                            context,
+                                                                            rootNavigator:
+                                                                                true)
+                                                                        .pop(
+                                                                            'dialog');
+                                                                  }
+                                                                },
+                                                                child: Text(
+                                                                    "Cancel",
+                                                                    style: GoogleFonts.montserrat(
+                                                                        fontSize:
+                                                                            13,
+                                                                        fontWeight:
+                                                                            FontWeight.w400))),
+                                                          ],
+                                                        ),
+                                                      )
+                                                    ],
                                                   ),
                                                 ),
-                                              ],
-                                            );
-                                          });
-                                    });
+                                              ),
+                                            ],
+                                          );
+                                        });
+                                  });
                                 });
                               },
                               child: Text(
@@ -1099,9 +1150,382 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                 ],
               );
             });
+      } else if (message.data["type"] == "Payment Online Done") {
+        print("Payment Online Done HERE");
+        trip_docid = message.data['trip_docid'];
+        var current_time = DateTime.now().toString();
+        var collectionReference = _firestore.collection('Trip_collection');
+        collectionReference.doc(trip_docid).update({
+          "userDetails": {
+            "user_uid": user_uid,
+            "user_image": user_image,
+            "user_phone": user_phone,
+            "user_name": user_name,
+            "user_pickup_lat": user_pickup_lat,
+            "user_pickup_long": user_pickup_long,
+            "user_pickup_address": user_pickup_address,
+            "user_destination_lat": user_destination_lat,
+            "user_destination_long": user_destination_long,
+            "user_destination_address": user_destination_address,
+            "user_trip_charge": user_trip_charge,
+            "user_trip_distance": user_trip_distance,
+            "user_trip_time": user_trip_time,
+            "user_email": user_email
+          },
+          'driverDetails': {
+            'driver_uid': Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .Uid,
+            'driver_profile':
+                Provider.of<AccountProvider>(context, listen: false)
+                    .userAccount
+                    .Image,
+            'driver_email': Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .Email,
+            'driver_name': Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .Username,
+            'driver_phone': Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .Ph,
+            'driver_rating':
+                Provider.of<AccountProvider>(context, listen: false)
+                    .userAccount
+                    .rating,
+          },
+          'cabDetails': {
+            "cab_type": Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .CarClass,
+            "cab_number": Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .CarNumber,
+            "cab_image": Provider.of<AccountProvider>(context, listen: false)
+                .userAccount
+                .CarUrl,
+          },
+          'paymentDetails': {
+            "payment_type": payment_type,
+            "payment_amount": user_trip_charge,
+            "payment_time": current_time,
+          },
+          'startTrip': startTrip,
+        }).then((value) async {
+          collectionReference = _firestore.collection('Trip_in_progress');
+          collectionReference.doc(user_uid).delete().then((e) {
+            subs.cancel();
+          });
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setBool("isinmidtrip", false);
+          prefs.setString("user_uid", "");
+
+          var response = prefs.setBool("isinmidtrip", false);
+          setState(() {
+            placeMarker = [];
+            Provider.of<DirectionsProvider>(context, listen: false)
+                .updateDirectionsProvider(null, null, 0, 0, {});
+            var collectionReference = _firestore.collection('Trip_in_progress');
+            var geoRef = geo.collection(collectionRef: collectionReference);
+            geoRef.delete(user_uid);
+            subs.cancel();
+            setState(() {
+              trip_details = false;
+              isinmidtrip = false;
+              prefs.setBool("status", false);
+            });
+          });
+
+          showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (builder) {
+                return ClassicGeneralDialogWidget(
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 6),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Text(
+                              "Trip Reviews",
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600, fontSize: 20),
+                            ),
+                            AnimatedTextKit(
+                              animatedTexts: [
+                                ColorizeAnimatedText(
+                                    "Share Your Ride Experience",
+                                    textStyle: GoogleFonts.poppins(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    colors: [
+                                      Colors.grey.shade900,
+                                      Colors.grey.shade300,
+                                    ]),
+                              ],
+                              repeatForever: true,
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(18.0),
+                                  child: Image.network(user_image,
+                                      width: 70, height: 70, fit: BoxFit.cover),
+                                ),
+                                SizedBox(
+                                  width: 30,
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(user_name,
+                                        style: GoogleFonts.roboto(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600)),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          LineIcons.starAlt,
+                                          color: Colors.amber,
+                                        ),
+                                        Text(
+                                          user_rating,
+                                          textAlign: TextAlign.left,
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 15,
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: 40,
+                              child: Row(
+                                children: [
+                                  Consumer<RatingProvider>(
+                                      builder: (context, value, _) {
+                                    return RatingBarIndicator(
+                                      rating: value.rating,
+                                      itemBuilder: (context, index) => Icon(
+                                        Icons.star,
+                                        color: Colors.amber,
+                                      ),
+                                      itemCount: 5,
+                                      itemSize: 30.0,
+                                      direction: Axis.horizontal,
+                                    );
+                                  }),
+                                  Container(
+                                    width: 80,
+                                    padding: EdgeInsets.only(left: 20),
+                                    child: Center(
+                                      child: TextFormField(
+                                        onChanged: (value) {
+                                          if (double.parse(value) >= 1.0 &&
+                                              double.parse(value) <= 5.0) {
+                                            Provider.of<RatingProvider>(context,
+                                                    listen: false)
+                                                .setRating(double.parse(value));
+                                          }
+                                        },
+                                        controller: reviewController,
+                                        keyboardType: TextInputType.number,
+                                        cursorColor: Colors.black,
+                                        decoration: InputDecoration(
+                                          contentPadding:
+                                              EdgeInsets.only(top: 6, left: 12),
+                                          hintText: '4.4',
+                                          filled: true,
+                                          fillColor: Colors.grey[300],
+                                          focusColor: Colors.black,
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5.0),
+                                            borderSide: BorderSide(
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5.0),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: 20,
+                            ),
+                            SizedBox(
+                              height: 35,
+                              width: 250,
+                              child: TextFormField(
+                                style: GoogleFonts.montserrat(
+                                    fontSize: 15, fontWeight: FontWeight.w400),
+                                controller: reviewMessageController,
+                                keyboardType: TextInputType.text,
+                                cursorColor: Colors.black,
+                                decoration: InputDecoration(
+                                  contentPadding:
+                                      EdgeInsets.only(top: 6, left: 12),
+                                  hintText: "Write a review",
+                                  hintStyle: GoogleFonts.montserrat(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w400),
+                                  focusColor: Colors.black,
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                    borderSide: BorderSide(
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(5.0),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              height: 10,
+                            ),
+                            Container(
+                              width: 250,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: 10, horizontal: 30),
+                                        primary: Colors.black,
+                                        onPrimary: Colors.white,
+                                      ),
+                                      onPressed: () {
+                                        if (reviewMessageController.text
+                                                .trim() !=
+                                            "") {
+                                          var collectionReference = _firestore
+                                              .collection('Trip_collection');
+                                          collectionReference
+                                              .doc(trip_docid)
+                                              .update({
+                                            "driver_review":
+                                                "${reviewMessageController.text.trim()}",
+                                          });
+                                          var avg;
+                                          if (reviewController.text.trim() !=
+                                              "") {
+                                            _firestore
+                                                .collection('Users')
+                                                .doc(trip_docid)
+                                                .get()
+                                                .then((value) {
+                                              double total = 0.0;
+                                              var last_5_ride_rating =
+                                                  value.data()![
+                                                      'last_5_ride_rating'];
+                                              last_5_ride_rating.removeAt(0);
+                                              last_5_ride_rating.add(
+                                                  reviewController.text.trim());
+                                              for (int i = 0;
+                                                  i < last_5_ride_rating.length;
+                                                  i++) {
+                                                total = total +
+                                                    double.parse(
+                                                        last_5_ride_rating[i]);
+                                              }
+                                              avg = total / 5;
+                                              if (avg.toString().length > 2) {
+                                                print("real value $avg");
+                                                avg = double.parse(avg
+                                                    .toString()
+                                                    .substring(0, 3));
+                                              }
+                                              _firestore
+                                                  .collection('Users')
+                                                  .doc(trip_docid)
+                                                  .update({'rating': avg});
+                                              Msg().sendUpdateRatingValue(
+                                                  user_token, avg);
+                                            });
+                                          }
+                                          while (Navigator.of(context,
+                                                  rootNavigator: true)
+                                              .canPop()) {
+                                            Navigator.of(context,
+                                                    rootNavigator: true)
+                                                .pop('dialog');
+                                          }
+
+                                          reviewMessageController.text = "";
+                                        } else {
+                                          _scaffoldKey.currentState!
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content:
+                                                  Text("Please write a review"),
+                                              duration: Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Text("Submit",
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w400))),
+                                  ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 10, horizontal: 30),
+                                          primary: Colors.white,
+                                          onPrimary: Colors.black),
+                                      onPressed: () {
+                                        while (Navigator.of(context,
+                                                rootNavigator: true)
+                                            .canPop()) {
+                                          Navigator.of(context,
+                                                  rootNavigator: true)
+                                              .pop('dialog');
+                                        }
+                                      },
+                                      child: Text("Cancel",
+                                          style: GoogleFonts.montserrat(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w400))),
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              });
+        });
       } else {
         print("notification");
-        // Navigator.of(context).pop(true);
+
         await FlutterLocalNotificationsPlugin()
             .show(12345, "${message.category}", "${message.data["type"]}",
                 platformChannelSpecifics,
@@ -1183,6 +1607,8 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
               },
             );
           } else if (_status) {
+            DateTime now = DateTime.now();
+            var current_time = now.toLocal().toString();
             collectionReference.doc(user_uid).set(
               {
                 "driverDetails": {
@@ -1234,6 +1660,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                     "user_trip_distance": user_trip_distance,
                     "user_trip_time": user_trip_time,
                     "cab_type": cab_type,
+                    'user_email': user_email,
                     "payment_type": payment_type,
                     "user_rating": user_rating,
                   }
@@ -1244,6 +1671,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                 "position": current.data,
                 "username": username,
                 "token": token,
+                "startTrip": current_time,
               },
             );
           } else {}
@@ -1618,7 +2046,8 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                       compassEnabled: false,
                       markers: Set.from(placeMarker),
                       polylines:
-                          Provider.of<DirectionsProvider>(context).polylines,
+                          Provider.of<DirectionsProvider>(context).polylines ??
+                              {},
                       mapToolbarEnabled: true,
                       trafficEnabled: false,
                       buildingsEnabled: true,
@@ -1965,7 +2394,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                             width: 10,
                                                           ),
                                                           Text(
-                                                              "${user_trip_distance}" +
+                                                              "      ${user_trip_distance}" +
                                                                   " KM",
                                                               style: GoogleFonts
                                                                   .openSans(
@@ -1982,7 +2411,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                             width: 10,
                                                           ),
                                                           Text(
-                                                              "${user_trip_time}" +
+                                                              "     ${user_trip_time}" +
                                                                   " Min",
                                                               style: GoogleFonts
                                                                   .openSans(
@@ -2082,9 +2511,429 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                                           .black),
                                                           icon: LineIcon(
                                                               LineIcons.car),
-                                                          onPressed: () {},
+                                                          onPressed: () {
+                                                            if (payment_type ==
+                                                                "Cash") {
+                                                              showDialog(
+                                                                  barrierDismissible:
+                                                                      false,
+                                                                  context:
+                                                                      context,
+                                                                  builder:
+                                                                      (builder) {
+                                                                    return ClassicGeneralDialogWidget(
+                                                                      actions: [
+                                                                        Padding(
+                                                                          padding: const EdgeInsets.symmetric(
+                                                                              vertical: 8,
+                                                                              horizontal: 6),
+                                                                          child:
+                                                                              SingleChildScrollView(
+                                                                            child:
+                                                                                Column(
+                                                                              children: [
+                                                                                Text(
+                                                                                  "Payment (Cash)",
+                                                                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18),
+                                                                                ),
+                                                                                Image.asset('asset/images/cash_pay.png'),
+                                                                                Text(
+                                                                                  user_trip_charge + " Rupees",
+                                                                                ),
+                                                                                SizedBox(
+                                                                                  height: 10,
+                                                                                ),
+                                                                                AnimatedTextKit(
+                                                                                  animatedTexts: [
+                                                                                    ColorizeAnimatedText(
+                                                                                      "Confirm the Payment",
+                                                                                      textStyle: GoogleFonts.poppins(
+                                                                                        fontSize: 14,
+                                                                                        fontWeight: FontWeight.w600,
+                                                                                      ),
+                                                                                      colors: [
+                                                                                        Colors.grey.shade900,
+                                                                                        Colors.grey.shade300,
+                                                                                      ],
+                                                                                    ),
+                                                                                  ],
+                                                                                  repeatForever: true,
+                                                                                ),
+                                                                                Padding(
+                                                                                  padding: const EdgeInsets.only(top: 10.0),
+                                                                                  child: TextButton(
+                                                                                    style: TextButton.styleFrom(
+                                                                                      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 40),
+                                                                                      shape: RoundedRectangleBorder(
+                                                                                        borderRadius: BorderRadius.circular(5),
+                                                                                      ),
+                                                                                      backgroundColor: Colors.black,
+                                                                                      primary: Colors.white,
+                                                                                    ),
+                                                                                    onPressed: () {
+                                                                                      DateTime now = DateTime.now();
+                                                                                      var current_time = now.toLocal().toString();
+                                                                                      var collectionReference = _firestore.collection('Trip_collection');
+                                                                                      trip_docid = user_uid + "_" + current_time;
+                                                                                      Msg().sendCashPaymentApproveByDriver(userstoken, trip_docid).then((value) {
+                                                                                        collectionReference.doc(user_uid + "_" + current_time).set({
+                                                                                          "userDetails": {
+                                                                                            "user_uid": user_uid,
+                                                                                            "user_image": user_image,
+                                                                                            "user_phone": user_phone,
+                                                                                            "user_name": user_name,
+                                                                                            "user_pickup_lat": user_pickup_lat,
+                                                                                            "user_pickup_long": user_pickup_long,
+                                                                                            "user_pickup_address": user_pickup_address,
+                                                                                            "user_destination_lat": user_destination_lat,
+                                                                                            "user_destination_long": user_destination_long,
+                                                                                            "user_destination_address": user_destination_address,
+                                                                                            "user_trip_charge": user_trip_charge,
+                                                                                            "user_trip_distance": user_trip_distance,
+                                                                                            "user_trip_time": user_trip_time,
+                                                                                            "user_email": user_email
+                                                                                          },
+                                                                                          'driverDetails': {
+                                                                                            'driver_uid': Provider.of<AccountProvider>(context, listen: false).userAccount.Uid,
+                                                                                            'driver_profile': Provider.of<AccountProvider>(context, listen: false).userAccount.Image,
+                                                                                            'driver_email': Provider.of<AccountProvider>(context, listen: false).userAccount.Email,
+                                                                                            'driver_name': Provider.of<AccountProvider>(context, listen: false).userAccount.Username,
+                                                                                            'driver_phone': Provider.of<AccountProvider>(context, listen: false).userAccount.Ph,
+                                                                                            'driver_rating': Provider.of<AccountProvider>(context, listen: false).userAccount.rating,
+                                                                                          },
+                                                                                          'cabDetails': {
+                                                                                            "cab_type": Provider.of<AccountProvider>(context, listen: false).userAccount.CarClass,
+                                                                                            "cab_number": Provider.of<AccountProvider>(context, listen: false).userAccount.CarNumber,
+                                                                                            "cab_image": Provider.of<AccountProvider>(context, listen: false).userAccount.CarUrl,
+                                                                                          },
+                                                                                          'paymentDetails': {
+                                                                                            "payment_type": payment_type,
+                                                                                            "payment_amount": user_trip_charge,
+                                                                                            "payment_time": current_time,
+                                                                                          },
+                                                                                          "trip_end_time": current_time,
+                                                                                          'startTrip': startTrip,
+                                                                                        }).then((value) async {
+                                                                                          collectionReference = _firestore.collection('Trip_in_progress');
+                                                                                          collectionReference.doc(user_uid).delete().then((e) {
+                                                                                            subs.cancel();
+                                                                                          });
+                                                                                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                                                                                          prefs.setBool("isinmidtrip", false);
+                                                                                          prefs.setString("user_uid", "");
+
+                                                                                          var response = prefs.setBool("isinmidtrip", false);
+                                                                                          setState(() {
+                                                                                            placeMarker = [];
+                                                                                            Provider.of<DirectionsProvider>(context, listen: false).updateDirectionsProvider(null, null, 0, 0, {});
+                                                                                            var collectionReference = _firestore.collection('Trip_in_progress');
+                                                                                            var geoRef = geo.collection(collectionRef: collectionReference);
+                                                                                            geoRef.delete(user_uid);
+                                                                                            subs.cancel();
+                                                                                            setState(() {
+                                                                                              trip_details = false;
+                                                                                              isinmidtrip = false;
+
+                                                                                              prefs.setBool("status", false);
+                                                                                            });
+                                                                                          });
+                                                                                          while (Navigator.of(context, rootNavigator: true).canPop()) {
+                                                                                            Navigator.of(context, rootNavigator: true).pop('dialog');
+                                                                                          }
+                                                                                          showDialog(
+                                                                                              barrierDismissible: false,
+                                                                                              context: context,
+                                                                                              builder: (builder) {
+                                                                                                return ClassicGeneralDialogWidget(
+                                                                                                  actions: [
+                                                                                                    Padding(
+                                                                                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                                                                                                      child: SingleChildScrollView(
+                                                                                                        child: Column(
+                                                                                                          children: [
+                                                                                                            Text(
+                                                                                                              "Trip Reviews",
+                                                                                                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 20),
+                                                                                                            ),
+                                                                                                            AnimatedTextKit(
+                                                                                                              animatedTexts: [
+                                                                                                                ColorizeAnimatedText("Share Your Ride Experience",
+                                                                                                                    textStyle: GoogleFonts.poppins(
+                                                                                                                      fontSize: 15,
+                                                                                                                      fontWeight: FontWeight.w600,
+                                                                                                                    ),
+                                                                                                                    colors: [
+                                                                                                                      Colors.grey.shade900,
+                                                                                                                      Colors.grey.shade300,
+                                                                                                                    ]),
+                                                                                                              ],
+                                                                                                              repeatForever: true,
+                                                                                                            ),
+                                                                                                            SizedBox(
+                                                                                                              height: 10,
+                                                                                                            ),
+                                                                                                            Row(
+                                                                                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                                                              children: [
+                                                                                                                ClipRRect(
+                                                                                                                  borderRadius: BorderRadius.circular(18.0),
+                                                                                                                  child: Image.network(user_image, width: 70, height: 70, fit: BoxFit.cover),
+                                                                                                                ),
+                                                                                                                SizedBox(
+                                                                                                                  width: 30,
+                                                                                                                ),
+                                                                                                                Column(
+                                                                                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                                                  children: [
+                                                                                                                    Text(user_name, style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w600)),
+                                                                                                                    Row(
+                                                                                                                      children: [
+                                                                                                                        Icon(
+                                                                                                                          LineIcons.starAlt,
+                                                                                                                          color: Colors.amber,
+                                                                                                                        ),
+                                                                                                                        Text(
+                                                                                                                          user_rating,
+                                                                                                                          textAlign: TextAlign.left,
+                                                                                                                          style: GoogleFonts.dmSans(
+                                                                                                                            fontSize: 15,
+                                                                                                                          ),
+                                                                                                                        )
+                                                                                                                      ],
+                                                                                                                    ),
+                                                                                                                  ],
+                                                                                                                ),
+                                                                                                              ],
+                                                                                                            ),
+                                                                                                            SizedBox(
+                                                                                                              height: 40,
+                                                                                                              child: Row(
+                                                                                                                children: [
+                                                                                                                  Consumer<RatingProvider>(builder: (context, value, _) {
+                                                                                                                    return RatingBarIndicator(
+                                                                                                                      rating: value.rating,
+                                                                                                                      itemBuilder: (context, index) => Icon(
+                                                                                                                        Icons.star,
+                                                                                                                        color: Colors.amber,
+                                                                                                                      ),
+                                                                                                                      itemCount: 5,
+                                                                                                                      itemSize: 30.0,
+                                                                                                                      direction: Axis.horizontal,
+                                                                                                                    );
+                                                                                                                  }),
+                                                                                                                  Container(
+                                                                                                                    width: 80,
+                                                                                                                    padding: EdgeInsets.only(left: 20),
+                                                                                                                    child: Center(
+                                                                                                                      child: TextFormField(
+                                                                                                                        onChanged: (value) {
+                                                                                                                          if (double.parse(value) >= 1.0 && double.parse(value) <= 5.0) {
+                                                                                                                            Provider.of<RatingProvider>(context, listen: false).setRating(double.parse(value));
+                                                                                                                          }
+                                                                                                                        },
+                                                                                                                        controller: reviewController,
+                                                                                                                        keyboardType: TextInputType.number,
+                                                                                                                        cursorColor: Colors.black,
+                                                                                                                        decoration: InputDecoration(
+                                                                                                                          contentPadding: EdgeInsets.only(top: 6, left: 12),
+                                                                                                                          hintText: '4.4',
+                                                                                                                          filled: true,
+                                                                                                                          fillColor: Colors.grey[300],
+                                                                                                                          focusColor: Colors.black,
+                                                                                                                          focusedBorder: OutlineInputBorder(
+                                                                                                                            borderRadius: BorderRadius.circular(5.0),
+                                                                                                                            borderSide: BorderSide(
+                                                                                                                              color: Colors.black,
+                                                                                                                            ),
+                                                                                                                          ),
+                                                                                                                          border: OutlineInputBorder(
+                                                                                                                            borderRadius: BorderRadius.circular(5.0),
+                                                                                                                            borderSide: BorderSide(
+                                                                                                                              color: Colors.grey,
+                                                                                                                            ),
+                                                                                                                          ),
+                                                                                                                        ),
+                                                                                                                      ),
+                                                                                                                    ),
+                                                                                                                  ),
+                                                                                                                ],
+                                                                                                              ),
+                                                                                                            ),
+                                                                                                            SizedBox(
+                                                                                                              height: 20,
+                                                                                                            ),
+                                                                                                            SizedBox(
+                                                                                                              height: 35,
+                                                                                                              width: 250,
+                                                                                                              child: TextFormField(
+                                                                                                                style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w400),
+                                                                                                                controller: reviewMessageController,
+                                                                                                                keyboardType: TextInputType.text,
+                                                                                                                cursorColor: Colors.black,
+                                                                                                                decoration: InputDecoration(
+                                                                                                                  contentPadding: EdgeInsets.only(top: 6, left: 12),
+                                                                                                                  hintText: "Write a review",
+                                                                                                                  hintStyle: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w400),
+                                                                                                                  focusColor: Colors.black,
+                                                                                                                  focusedBorder: OutlineInputBorder(
+                                                                                                                    borderRadius: BorderRadius.circular(5.0),
+                                                                                                                    borderSide: BorderSide(
+                                                                                                                      color: Colors.black,
+                                                                                                                    ),
+                                                                                                                  ),
+                                                                                                                  border: OutlineInputBorder(
+                                                                                                                    borderRadius: BorderRadius.circular(5.0),
+                                                                                                                    borderSide: BorderSide(
+                                                                                                                      color: Colors.grey,
+                                                                                                                    ),
+                                                                                                                  ),
+                                                                                                                ),
+                                                                                                              ),
+                                                                                                            ),
+                                                                                                            SizedBox(
+                                                                                                              height: 10,
+                                                                                                            ),
+                                                                                                            Container(
+                                                                                                              width: 250,
+                                                                                                              child: Row(
+                                                                                                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                                                                                                children: [
+                                                                                                                  ElevatedButton(
+                                                                                                                      style: ElevatedButton.styleFrom(
+                                                                                                                        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+                                                                                                                        primary: Colors.black,
+                                                                                                                        onPrimary: Colors.white,
+                                                                                                                      ),
+                                                                                                                      onPressed: () {
+                                                                                                                        if (reviewMessageController.text.trim() != "") {
+                                                                                                                          var collectionReference = _firestore.collection('Trip_collection');
+                                                                                                                          collectionReference.doc(trip_docid).update({
+                                                                                                                            "driver_review": "${reviewMessageController.text.trim()}",
+                                                                                                                          });
+                                                                                                                          var avg;
+                                                                                                                          if (reviewController.text.trim() != "") {
+                                                                                                                            _firestore.collection('Users').doc(trip_docid).get().then((value) {
+                                                                                                                              double total = 0.0;
+                                                                                                                              var last_5_ride_rating = value.data()!['last_5_ride_rating'];
+                                                                                                                              last_5_ride_rating.removeAt(0);
+                                                                                                                              last_5_ride_rating.add(reviewController.text.trim());
+                                                                                                                              for (int i = 0; i < last_5_ride_rating.length; i++) {
+                                                                                                                                total = total + double.parse(last_5_ride_rating[i]);
+                                                                                                                              }
+                                                                                                                              avg = total / 5;
+                                                                                                                              if (avg.toString().length > 2) {
+                                                                                                                                print("real value $avg");
+                                                                                                                                avg = double.parse(avg.toString().substring(0, 3));
+                                                                                                                              }
+                                                                                                                              _firestore.collection('Users').doc(trip_docid).update({'rating': avg});
+                                                                                                                              Msg().sendUpdateRatingValue(user_token, avg);
+                                                                                                                            });
+                                                                                                                          }
+                                                                                                                          while (Navigator.of(context, rootNavigator: true).canPop()) {
+                                                                                                                            Navigator.of(context, rootNavigator: true).pop('dialog');
+                                                                                                                          }
+
+                                                                                                                          reviewMessageController.text = "";
+                                                                                                                        } else {
+                                                                                                                          _scaffoldKey.currentState!.showSnackBar(
+                                                                                                                            SnackBar(
+                                                                                                                              content: Text("Please write a review"),
+                                                                                                                              duration: Duration(seconds: 2),
+                                                                                                                            ),
+                                                                                                                          );
+                                                                                                                        }
+                                                                                                                      },
+                                                                                                                      child: Text("Submit", style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w400))),
+                                                                                                                  ElevatedButton(
+                                                                                                                      style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(vertical: 10, horizontal: 30), primary: Colors.white, onPrimary: Colors.black),
+                                                                                                                      onPressed: () {
+                                                                                                                        while (Navigator.of(context, rootNavigator: true).canPop()) {
+                                                                                                                          Navigator.of(context, rootNavigator: true).pop('dialog');
+                                                                                                                        }
+                                                                                                                      },
+                                                                                                                      child: Text("Cancel", style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w400))),
+                                                                                                                ],
+                                                                                                              ),
+                                                                                                            )
+                                                                                                          ],
+                                                                                                        ),
+                                                                                                      ),
+                                                                                                    ),
+                                                                                                  ],
+                                                                                                );
+                                                                                              });
+                                                                                        });
+                                                                                      });
+                                                                                    },
+                                                                                    child: Text(
+                                                                                      "Payment Approve",
+                                                                                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                                                                                    ),
+                                                                                  ),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    );
+                                                                  });
+                                                            } else {
+                                                              showDialog(
+                                                                  barrierDismissible:
+                                                                      false,
+                                                                  context:
+                                                                      context,
+                                                                  builder:
+                                                                      (builder) {
+                                                                    return ClassicGeneralDialogWidget(
+                                                                      actions: [
+                                                                        Padding(
+                                                                          padding: const EdgeInsets.symmetric(
+                                                                              vertical: 8,
+                                                                              horizontal: 6),
+                                                                          child:
+                                                                              Column(
+                                                                            children: [
+                                                                              Text(
+                                                                                "Payment (Online)",
+                                                                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18),
+                                                                              ),
+                                                                              Image.asset('asset/images/online_pay.png'),
+                                                                              Text(
+                                                                                user_trip_charge + " Rupee",
+                                                                              ),
+                                                                              SizedBox(
+                                                                                height: 10,
+                                                                              ),
+                                                                              AnimatedTextKit(
+                                                                                animatedTexts: [
+                                                                                  ColorizeAnimatedText(
+                                                                                    "Waiting for User's Payment Approval",
+                                                                                    textStyle: GoogleFonts.poppins(
+                                                                                      fontSize: 14,
+                                                                                      fontWeight: FontWeight.w600,
+                                                                                    ),
+                                                                                    colors: [
+                                                                                      Colors.grey.shade900,
+                                                                                      Colors.grey.shade300,
+                                                                                    ],
+                                                                                  ),
+                                                                                ],
+                                                                                repeatForever: true,
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    );
+                                                                  });
+                                                              Msg().sendOnlinePaymentReqFromDriver(
+                                                                  user_token);
+                                                            }
+                                                          },
                                                           label: Text(
-                                                              "End The Trip $payment_type"),
+                                                              " End The Trip "),
                                                         ),
                                                       ),
                                                     ],
@@ -2185,7 +3034,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                             width: 10,
                                                           ),
                                                           Text(
-                                                              "${user_trip_distance}" +
+                                                              "     ${user_trip_distance}" +
                                                                   " KM",
                                                               style: GoogleFonts
                                                                   .openSans(
@@ -2202,7 +3051,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                             width: 10,
                                                           ),
                                                           Text(
-                                                              "${user_trip_time}" +
+                                                              "   $user_trip_time" +
                                                                   " Min",
                                                               style: GoogleFonts
                                                                   .openSans(
@@ -2396,7 +3245,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                           showDialog(
                                                             context: context,
                                                             barrierDismissible:
-                                                                true,
+                                                                false,
                                                             useSafeArea: true,
                                                             builder: (ctx) {
                                                               return Dialog(
@@ -2497,6 +3346,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                                                                                     newmapcontroller.animateCamera(
                                                                                       CameraUpdate.newLatLngBounds(Provider.of<DirectionsProvider>(context, listen: false).bounds!, 65.0),
                                                                                     );
+                                                                                    startTrip = DateTime.now().toString();
                                                                                     Msg().sendStartTrip(user_token).then((value) {
                                                                                       sharedPreferences.setBool("reaching_destination", true);
                                                                                     });
@@ -2722,7 +3572,8 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
                 value.data()!['carDetails']['usersDetails']['user_pickup_long'];
             user_destination_lat = value.data()!['carDetails']['usersDetails']
                 ['user_destination_lat'];
-            user_rating=value.data()!['carDetails']['usersDetails']['user_rating'];
+            user_rating =
+                value.data()!['carDetails']['usersDetails']['user_rating'];
             user_destination_long = value.data()!['carDetails']['usersDetails']
                 ['user_destination_long'];
             user_pickup_address = value.data()!['carDetails']['usersDetails']
@@ -2738,6 +3589,9 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
             user_uid = value.data()!['carDetails']['usersDetails']['user_uid'];
             payment_type =
                 value.data()!['carDetails']['usersDetails']['payment_type'];
+            user_email =
+                value.data()!['carDetails']['usersDetails']['user_email'];
+            startTrip = value.data()!['startTrip'];
             pickup = LatLng(double.tryParse(user_pickup_lat)!,
                 double.tryParse(user_pickup_long)!);
             destination = LatLng(double.tryParse(user_destination_lat)!,
@@ -2839,6 +3693,7 @@ class _MapsState extends State<Maps> with AutomaticKeepAliveClientMixin {
     getnotification();
     checkisinmidtrip();
     setupnotification();
+
     super.initState();
   }
 }

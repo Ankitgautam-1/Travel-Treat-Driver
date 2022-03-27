@@ -208,6 +208,70 @@ class Msg {
     }
   }
 
+  Future<dynamic> sendCashPaymentApproveByDriver(
+    String token,
+    String docid,
+  ) async {
+    Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+    dynamic bodydata = jsonEncode(<String, dynamic>{
+      "data": {
+        "type": "Cash Payment Approve By Driver",
+        "docid": docid,
+      },
+      "to": token
+    });
+    print("Url = $url");
+    try {
+      final response = await http.post(url, headers: _headers, body: bodydata);
+      if (response.statusCode == 200) {
+        try {
+          // If server returns an OK response, parse the JSON.
+          print("Json Data :----> ${response.body}");
+          dynamic a = response.body.runtimeType;
+          print("types :$a");
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error is :$e");
+      return null;
+    }
+  }
+
+  Future<dynamic> sendOnlinePaymentReqFromDriver(
+    String token,
+  ) async {
+    Uri url = Uri.parse("https://fcm.googleapis.com/fcm/send");
+    dynamic bodydata = jsonEncode(<String, dynamic>{
+      "data": {
+        "type": "Online Payment Request from Driver",
+      },
+      "to": token
+    });
+    print("Url = $url");
+    try {
+      final response = await http.post(url, headers: _headers, body: bodydata);
+      if (response.statusCode == 200) {
+        try {
+          // If server returns an OK response, parse the JSON.
+          print("Json Data :----> ${response.body}");
+          dynamic a = response.body.runtimeType;
+          print("types :$a");
+        } catch (e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error is :$e");
+      return null;
+    }
+  }
+
   Future<void> sendAcceptRidereq(
       String uid,
       String username,
